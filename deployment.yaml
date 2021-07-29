@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: nexus
+  name: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      containers:
+      - name: nexus
+        image: sonatype/nexus:latest
+        ports:
+          - name: http-port
+            containerPort: 8081
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+        env:
+          - name: CONTEXT_PATH
+            value: ""
+          - name: MAX_HEAP
+            value: "1024m"
+          - name: MIN_HEAP
+            value: "512m"
+        volumeMounts:
+          - name: nexus-data-pvc
+            mountPath: /sonatype-work
+        livenessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - curl -s 'http://HOSTNAME' /dev/null
+            initialDelaySeconds: 300
+            timeoutSeconds: 10
+            failureThreshold: 3
+            periodSeconds: 60
+      volumes:
+        - name: nexus-data-pvc
+          persistentVolumeClaim:
+            claimName: nexus-data-pvc
